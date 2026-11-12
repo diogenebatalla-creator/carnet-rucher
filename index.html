@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#b7791f"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<title>Carnet du rucher</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#222;--mute:#6b6b6b;--line:#d9d5cb;--acc:#b7791f;--accink:#fff;--ok:#2e7d32;--warn:#b3261e;--chip:#eee9dc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171612;--card:#23211b;--ink:#eee;--mute:#a9a597;--line:#3a372d;--acc:#e0a53a;--accink:#1a1405;--ok:#7bd17f;--warn:#ff8a80;--chip:#2f2c22}}
+:root[data-theme="dark"]{--bg:#171612;--card:#23211b;--ink:#eee;--mute:#a9a597;--line:#3a372d;--acc:#e0a53a;--accink:#1a1405;--ok:#7bd17f;--warn:#ff8a80;--chip:#2f2c22}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.4 system-ui,sans-serif}
+main{max-width:560px;margin:0 auto;padding:12px 16px 80px}
+h1{font-size:20px;margin:6px 0 10px}
+h2{font-size:15px;margin:18px 0 8px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button{font:inherit;min-height:48px;padding:0 16px;border-radius:12px;border:1px solid var(--line);background:var(--chip);color:var(--ink)}
+button.pri{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:700}
+button.ok{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:700}
+.seg button{flex:1}.seg button.on{background:var(--acc);color:var(--accink);font-weight:700}
+.chips button{min-width:56px;min-height:52px;font-weight:700;color:#000;border:2px solid transparent}
+.chips button.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--bg) inset}
+.nuc{background:#d8c8f0}
+#mic{width:100%;min-height:76px;font-size:20px}
+#mic.live{background:var(--warn);border-color:var(--warn);color:#fff}
+#heard{min-height:44px;color:var(--mute);font-style:italic}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.grid>div{grid-column:span 3}.grid>div.sm{grid-column:span 2}.grid>div.sm label{font-size:13px}
+.grid label{font-size:15px;font-weight:700;color:var(--ink);display:block;margin-bottom:2px}
+.grid input,.grid select,.grid textarea,input.t{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.grid>div.full{grid-column:1/-1}
+.warn{color:var(--warn);font-size:14px}
+.small{font-size:14px;color:var(--mute)}
+.ex button{min-height:40px;font-size:14px;margin:0 6px 6px 0}
+.item{border-top:1px solid var(--line);padding:8px 0;font-size:15px}
+.item:first-child{border-top:0}
+.pill{display:inline-block;padding:1px 8px;border-radius:99px;background:var(--chip);font-size:13px}
+</style>
+</head><body>
+<main>
+<h1>🐝 Carnet du rucher <span class="pill" style="font-size:13px;vertical-align:middle">version 1.0</span></h1>
+<p class="small">Prototype d'essai. Outil amateur fourni tel quel, sans garantie.</p>
+
+<div class="card">
+  <div class="row seg" id="sites"></div>
+  <h2>Colonie</h2>
+  <div class="row chips" id="chips"></div>
+</div>
+
+<div class="card">
+  <button id="mic" class="pri">🎤 Cliquer pour parler</button>
+  <div id="heard">Cliquez sur le micro, puis dites « ruche 4 », puis vos observations.</div>
+  <div class="row" style="margin-top:8px">
+    <input class="t" id="typed" placeholder="ou tapez / dictez au clavier…" style="flex:1">
+    <button id="send1">OK</button>
+  </div>
+  <div class="small" id="micmsg"></div>
+  <div style="margin-top:10px"><b>Mode d'emploi</b>
+  <ol class="small" style="margin:6px 0 0;padding-left:20px;line-height:1.6">
+   <li>Appuyez sur la touche « Parler ».</li>
+   <li>Dites « ruche » et le numéro : « ruche 4 ».</li>
+   <li>Pour chaque case du brouillon, dites le nom de la case puis sa valeur : « faces de couvain, six », « force, bonne », « reine, vue ».</li>
+   <li>Dites « valider ».</li>
+  </ol></div>
+</div>
+
+<div class="card" id="draft">
+  <h2 style="margin-top:0">Brouillon <span id="dtitle" class="pill">aucune colonie</span></h2>
+  <div class="grid" id="fields"></div>
+  <div class="warn" id="warns"></div>
+  <div class="row" style="margin-top:10px">
+    <button class="ok" id="valider" style="flex:2">✔ Valider</button>
+    <button id="annuler" style="flex:1">Annuler</button>
+  </div>
+</div>
+
+<h2>Visites enregistrées (<span id="cnt">0</span>) — à valider avant envoi</h2>
+<div class="card" id="list"></div>
+<div class="row">
+  <input class="t" id="who" placeholder="Qui ? (prénom)" style="flex:1">
+  <button class="pri" id="envoyer">Envoyer les validées (CSV)</button>
+</div>
+<p class="small" id="sendmsg">« Envoyer » ouvre le partage Android : choisissez Drive, dossier abeille. Les visites restent sur ce téléphone tant qu'elles ne sont pas envoyées.</p>
+</main>
+<script>
+const COLORS={1:'#00B0F0',2:'#00B0F0',3:'#B7B7B7',4:'#00B0F0',5:'#FFFF00',6:'#37B5BF',7:'#37B5BF',8:'#00B0F0',9:'#B7B7B7',10:'#66FF33',11:'#66FF33'};
+const SITES={Maison:[1,3,4,8,10,11],Gare:[2,6,7],Nucs:[1,2,3,4,5]};const fieldEls={};
+const NUMF=['cadres','abeilles','oeufs','couvain','pollen','nectar','miel','varroas','quantite'];
+const DEF={quantite:'0',reine:'non vue',cadres:'0',force:'néant',abeilles:'0',oeufs:'0',couvain:'0',pollen:'0',nectar:'0',miel:'0',nourr:'non',varroas:'0',traitement:'néant'};
+const FIELDS=[['reine','Reine'],['force','Force'],['cadres','Nombre de cadres'],['abeilles','Dont abeilles'],['oeufs','Œufs / larve'],['couvain','Faces de couvain'],['pollen','Pollen'],['nectar','Nectar'],['miel','Réserves miel'],['nourr','Nourrissement'],['quantite','Quantité (cl)'],['varroas','Nombre de varroas'],['traitement','Traitement'],['obs','Observation / travail effectué ou à prévoir']];
+const KW=[['reine',/\b(?:reines?|rennes?|raine|reyne)\b/],['oeufs',/\b(?:oeufs?|larves?)\b/],['couvain',/\bcouvain\b/],['force',/\bforce\b/],['abeilles',/\b(?:dont abeilles?|dont|abeilles?)\b/],['cadres',/\b(?:nombre de )?cadres?\b/],['pollen',/\bpollen\b/],['quantite',/\bquantite\b/],['varroas',/\b(?:nombre de )?var+o\w*\b/],['nectar',/\bnectar\b/],['miel',/\b(?:reserves?(?: de)? miel|miel)\b/],['nourr',/\bnourrissement\b|\bnourri\b/],['traitement',/\btraitement\b/],['obs',/\bobservations?\b/]];
+const NW={'quatre-vingt':80,soixante:60,cinquante:50,quarante:40,trente:30,cent:100,zero:0,un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,treize:13,quatorze:14,quinze:15,seize:16,'dix-sept':17,'dix-huit':18,'dix-neuf':19,vingt:20};
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,' ').replace(/[,;.!?]/g,' ').replace(/\s+/g,' ').trim();
+function nums(s){
+  s=s.replace(/(\D)-(?=[a-z])/g,'$1 ').replace(/([a-z])-(?=[a-z])/g,(m,c)=>c+'-');
+  s=s.replace(/\bet demie?\b/g,' .5');
+  s=s.replace(/\b(quatre[- ]vingts?|soixante|cinquante|quarante|trente|cent|dix[- ](?:sept|huit|neuf)|zero|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt)\b/g,m=>' '+NW[m.replace(' ','-').replace(/^(quatre-vingt)s$/,'$1')]+' ');
+  s=s.replace(/\s+/g,' ');
+  s=s.replace(/\b([2-9]0) (?:et )?(1\d|[1-9])\b/g,(m,a,b)=>String(+a+ +b));
+  s=s.replace(/(\d)\s+\.5/g,'$1.5').replace(/(\d),(\d)/g,'$1.$2').replace(/\s+/g,' ').trim();
+  return s;
+}
+function parse(raw){
+  const out={cmds:[],set:{}};
+  let t=nums(norm(raw));
+  let m;
+  if(/\bprise de notes?\b/.test(t)){out.cmds.push('start');t=t.replace(/\bprise de notes?\b/,' ')}
+  if((m=t.match(/\brucher (maison|jardin|gare|nucs?)\b/))){out.site=m[1]==='gare'?'Gare':/^nuc/.test(m[1])?'Nucs':'Maison';t=t.replace(m[0],' ')}
+  if(/\bruche suivante\b/.test(t)){out.cmds.push('next');t=t.replace(/\bruche suivante\b/,' ')}
+  if((m=t.match(/\b(ruche|nuc|nucleus|nucleo)s? (\d+)\b/))){out.colony=(m[1]==='ruche'?'Ruche ':'Nuc ')+m[2];t=t.replace(m[0],' ')}
+  for(const [c,re] of [['valider',/\bvalid(?:er|e)\b/],['annuler',/\bannul(?:er|e)\b/],['relis',/\brelis\b|\bresume\b/]]){if(re.test(t)){out.cmds.push(c);t=t.replace(re,' ')}}
+  t=t.replace(/\s+/g,' ').trim();
+  // nombre avant "cadres" / "faces"
+  if((m=t.match(/(\d+(?:\.5)?) (?:cadres?|faces?)(?: de couvain)?(?! d abeilles)/))&&/cadres?/.test(m[0])&&!/\bdont\b/.test(t.slice(0,m.index+m[0].length))){out.set.cadres=m[1];t=t.replace(m[0],' ')}
+  if((m=t.match(/(\d+(?:\.5)?) faces?(?: de couvain)?/))){out.set.couvain=m[1];t=t.replace(m[0],' ')}
+  if((m=t.match(/\bdont (\d+(?:\.5)?)(?: cadres?)?(?: d abeilles?)?/))){out.set.abeilles=m[1];t=t.replace(m[0],' ')}
+  if((m=t.match(/(\d+(?:\.5)?) cadres?/))&&!out.set.cadres){out.set.cadres=m[1];t=t.replace(m[0],' ')}
+  if((m=t.match(/(\d+(?:\.\d+)?) (?:centilitres?|cl)\b/))){out.set.quantite=m[1];t=t.replace(m[0],' ')}
+  if((m=t.match(/(\d+(?:\.\d+)?) litres?\b/))){out.set.quantite=String(Math.round(parseFloat(m[1])*100));t=t.replace(m[0],' ')}
+  // mots-clés
+  const pos=[];
+  for(const [k,re] of KW){const r=t.match(re);if(r)pos.push([r.index,r[0].length,k])}
+  pos.sort((a,b)=>a[0]-b[0]);
+  pos.forEach((p,i)=>{
+    const end=i+1<pos.length?pos[i+1][0]:t.length;
+    let v=t.slice(p[0]+p[1],end).trim();
+    if(p[2]==='obs'){v=t.slice(p[0]+p[1]).trim();}
+    if(NUMF.includes(p[2])){const n=v.match(/\d+(?:\.\d+)?/);v=n?n[0]:''}
+    if(p[2]==='nourr'){v=/\bnon\b|\bpas\b|\baucun/.test(v)?'non':/\boui\b/.test(v)?'oui':''}
+    if(v)out.set[p[2]]=v;
+  });
+  if(pos.length&&pos.some(p=>p[2]==='obs')){/* le reste appartient à l'observation */}
+  if(out.set.quantite&&+out.set.quantite>0&&!out.set.nourr)out.set.nourr='oui';
+  if(!pos.length&&t&&!Object.keys(out.set).length&&!out.cmds.length&&!out.colony&&!out.site)out.set.obs=t;
+  return out;
+}
+// ---------- état ----------
+let site='Maison',colony=null,draft={},phrases=[],visits=[];
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem('rucher_visits',JSON.stringify(visits));localStorage.setItem('rucher_who',$('who').value)}catch(e){}};
+try{visits=JSON.parse(localStorage.getItem('rucher_visits')||'[]');$('who').value=localStorage.getItem('rucher_who')||''}catch(e){}
+function colonies(){return SITES[site].map(n=>(site==='Nucs'?'Nuc ':'Ruche ')+n)}
+function renderSites(){
+  $('sites').innerHTML='';
+  for(const s of ['Maison','Gare','Nucs']){const b=document.createElement('button');b.textContent=s;if(s===site)b.className='on';b.onclick=()=>{site=s;renderSites();renderChips()};$('sites').appendChild(b)}
+  $('sites').className='row seg';
+}
+function renderChips(){
+  const c=$('chips');c.innerHTML='';
+  const list=colonies();
+  for(const name of list){
+    const b=document.createElement('button');const n=+name.split(' ')[1];
+    b.textContent=name.replace('Ruche ','R').replace('Nuc ','N');
+    b.style.background=name.startsWith('Nuc')?'#d8c8f0':COLORS[n];
+    if(name===colony)b.classList.add('on');
+    b.onclick=()=>selectColony(name);c.appendChild(b);
+  }
+}
+function selectColony(name){
+  if(colony&&colony!==name&&Object.keys(draft).length&&!confirm('Brouillon non validé pour '+colony+' : l’abandonner ?'))return;
+  if(colony!==name){draft={};phrases=[]}
+  colony=name;
+  const n=+name.split(' ')[1];
+  if(name.startsWith('Ruche')){site=SITES.Gare.includes(n)?'Gare':'Maison'}else{site='Nucs'}renderSites();
+  renderChips();renderDraft();
+}
+const today=()=>new Date().toISOString().slice(0,10);
+let visitDate=today();
+function renderDraft(){
+  $('dtitle').textContent=colony?colony+' · '+site:'aucune colonie';
+  const g=$('fields');g.innerHTML='';
+  {const d=document.createElement('div');d.className='full';d.innerHTML='<label>Date visite</label><input type="date">';const el=d.lastChild;el.value=visitDate;el.oninput=()=>{visitDate=el.value||today()};g.appendChild(d)}
+  for(const [k,l] of FIELDS){
+    const d=document.createElement('div');if(k==='obs')d.className='full';if(['miel','nourr','quantite','varroas'].includes(k))d.className='sm';
+    d.innerHTML=`<label>${l}</label>`+(k==='obs'?'<textarea rows="2"></textarea>':k==='nourr'?'<select><option>non</option><option>oui</option></select>':NUMF.includes(k)?'<input inputmode="decimal">':'<input>');
+    const el=d.lastChild;fieldEls[k]=el;el.value=draft[k]??DEF[k]??'';el.oninput=()=>{if(NUMF.includes(k)){const c=el.value.replace(/[^0-9.,]/g,'');if(c!==el.value)el.value=c}draft[k]=el.value;warn()};g.appendChild(d);
+  }
+  warn();
+}
+function warn(){
+  const w=[];
+  if(!colony&&Object.values(draft).some(v=>v))w.push('Choisissez une colonie (ou dites « ruche 4 »).');
+  const n=parseFloat(draft.cadres),a=parseFloat(draft.abeilles);
+  if(n&&a&&a>n)w.push('Dont abeilles > nombre de cadres : à vérifier.');
+  $('warns').textContent=w.join(' ');
+}
+function stopListen(){try{if(native&&live)native.stop();else if(dict&&live)dict.stop()}catch(e){}}
+function showFields(d){for(const k in fieldEls)if(document.activeElement!==fieldEls[k])fieldEls[k].value=d[k]??DEF[k]??''}
+function livePreview(text){const p=parse(text);showFields({...draft,...p.set})}
+function say(t){$('heard').textContent=t}
+function handle(raw){
+  const p=parse(raw);say('« '+raw+' »');
+  if(p.site){site=p.site;renderSites();renderChips()}
+  if(p.colony&&!p.cmds.includes('valider'))selectColony(p.colony);
+  if(p.cmds.includes('next')&&colony){const l=colonies();const i=l.indexOf(colony);selectColony(l[(i+1)%l.length])}
+  if(Object.keys(p.set).length){phrases.push(raw);for(const k in p.set)draft[k]=p.set[k];renderDraft()}
+  if(p.cmds.includes('relis')){const s=FIELDS.filter(([k])=>draft[k]).map(([k,l])=>l+' '+draft[k]).join(', ');say((colony||'?')+' : '+(s||'rien'));
+    try{const u=new SpeechSynthesisUtterance(colony+'. '+s);u.lang='fr-FR';speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}}
+  if(p.cmds.includes('annuler')){draft={};phrases=[];renderDraft()}
+  if(p.cmds.includes('valider'))valider();
+}
+function valider(){
+  if(!colony||!Object.values(draft).some(v=>v)){warn();return}
+  const now=new Date();
+  visits.push({ok:false,datev:visitDate,id:now.getTime().toString(36)+Math.random().toString(36).slice(2,5),date:now.toISOString(),site,colonie:colony,qui:$('who').value,...Object.fromEntries(FIELDS.map(([k])=>[k,draft[k]??DEF[k]??''])),dicte:phrases.join(' | ')});
+  save();const done=colony;draft={};phrases=[];visitDate=today();colony=null;renderChips();renderDraft();renderList();stopListen();say('✔ '+done+' enregistrée. Écoute arrêtée : cliquez sur le micro, puis dites la prochaine ruche.');
+}
+function renderList(){
+  $('cnt').textContent=visits.length;
+  const l=$('list');l.innerHTML=visits.length?'':'<span class="small">Aucune visite pour l’instant.</span>';
+  for(const v of visits.slice().reverse()){
+    const d=document.createElement('div');d.className='item';
+    const s=FIELDS.filter(([k])=>v[k]).map(([k,lb])=>lb+' : '+v[k]).join(' · ');
+    d.innerHTML=`<b></b> <span class="pill"></span><div class="small"></div>`;
+    d.querySelector('b').textContent=v.colonie;
+    d.querySelector('.pill').textContent=v.site+' · '+new Date(v.date).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    d.querySelector('.small').textContent=s;
+    const bar=document.createElement('div');bar.className='row';bar.style.marginTop='6px';
+    const bv=document.createElement('button');bv.textContent=v.ok?'✔ Validée (toucher pour annuler)':'✔ Valider';bv.className=v.ok?'ok':'';bv.style.flex='2';
+    bv.onclick=()=>{v.ok=!v.ok;save();renderList()};
+    const bd=document.createElement('button');bd.textContent='🗑 Supprimer';bd.style.flex='1';
+    bd.onclick=()=>{if(bd.dataset.arm){visits=visits.filter(x=>x.id!==v.id);save();renderList()}else{bd.dataset.arm=1;bd.textContent='Confirmer ?';bd.style.background='var(--warn)';bd.style.color='#fff';setTimeout(()=>{if(bd.isConnected){delete bd.dataset.arm;bd.textContent='🗑 Supprimer';bd.style.background='';bd.style.color=''}},3000)}};
+    bar.append(bv,bd);d.appendChild(bar);
+    l.appendChild(d);
+  }
+}
+$('valider').onclick=valider;
+$('annuler').onclick=()=>{draft={};phrases=[];renderDraft()};
+$('send1').onclick=()=>{const v=$('typed').value.trim();if(v){handle(v);$('typed').value=''}};
+$('typed').onkeydown=e=>{if(e.key==='Enter')$('send1').onclick()};
+$('envoyer').onclick=async()=>{
+  const sel=visits.filter(v=>v.ok);
+  if(!sel.length){$('sendmsg').textContent='Aucune visite validée : touchez « Valider » sous chaque visite à envoyer.';return}
+  const head=['id','date','datev','site','colonie','qui',...FIELDS.map(f=>f[0]).filter(k=>k!=='quantite'),'dicte'];
+  const q=x=>'"'+String(x??'').replace(/"/g,'""')+'"';
+  const csv='﻿'+head.join(';')+'\r\n'+sel.map(v=>head.map(h=>q(h==='nourr'&&v.nourr==='oui'&&+v.quantite>0?'oui '+v.quantite+' cl':v[h])).join(';')).join('\r\n');
+  const name='visites_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')+'.csv';
+  const file=new File([csv],name,{type:'text/csv'});
+  const dl=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);$('sendmsg').textContent='Fichier téléchargé : déposez-le dans Drive > abeille.'};
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});$('sendmsg').textContent='Partage ouvert : choisissez Drive, dossier abeille.'}
+    else dl();
+  }catch(e){if(e&&e.name==='AbortError')$('sendmsg').textContent='Envoi annulé.';else dl()}
+};
+// ---------- dictée ----------
+let dict=null,live=false,native=null;
+function setLive(v){live=v;$('mic').classList.toggle('live',v);$('mic').textContent=v?'⏹ Écoute… (cliquer pour arrêter)':'🎤 Cliquer pour parler'}
+function initNative(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){$('mic').disabled=false;$('mic').textContent='⌨️ Dicter au clavier';$('micmsg').textContent='Touchez le champ de saisie, puis le micro de votre clavier Android : la phrase est prise en compte après une courte pause.';return}
+  native=new SR();native.lang='fr-FR';native.continuous=true;native.interimResults=true;
+  native.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)handle(r[0].transcript);else{say('… '+r[0].transcript);livePreview(r[0].transcript)}}};
+  native.onstart=()=>setLive(true);native.onend=()=>setLive(false);
+  native.onerror=e=>{setLive(false);$('micmsg').textContent='Micro du navigateur refusé ou indisponible ('+e.error+'). Utilisez le micro du clavier dans le champ de saisie.'};
+  $('mic').disabled=false;setLive(false);$('micmsg').textContent='Dictée du navigateur (Chrome).';
+}
+let autoT=null;
+$('typed').addEventListener('input',()=>{clearTimeout(autoT);autoT=setTimeout(()=>{const v=$('typed').value.trim();if(v){handle(v);$('typed').value=''}},1800)});
+initNative();
+$('mic').onclick=()=>{if(native){if(live)native.stop();else{try{native.start()}catch(e){}}return}$('typed').focus()};
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+window.addEventListener('beforeunload',e=>{if(Object.values(draft).some(v=>v)){e.preventDefault()}});
+renderSites();renderChips();renderDraft();renderList();
+</script>
+</body></html>
