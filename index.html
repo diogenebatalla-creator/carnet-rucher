@@ -53,6 +53,7 @@ button.ok{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:700
     <button id="send1">OK</button>
   </div>
   <div class="small" id="micmsg"></div>
+  <div class="small" id="log" style="margin-top:6px"></div>
   <div style="margin-top:10px"><b>Mode d'emploi</b>
   <ol class="small" style="margin:6px 0 0;padding-left:20px;line-height:1.6">
    <li>Appuyez sur la touche « Parler ».</li>
@@ -86,14 +87,14 @@ const SITES={Maison:[1,3,4,8,10,11],Gare:[2,6,7],Nucs:[1,2,3,4,5]};const fieldEl
 const NUMF=['cadres','abeilles','oeufs','couvain','pollen','nectar','miel','varroas','quantite'];
 const DEF={quantite:'0',reine:'non vue',cadres:'0',force:'néant',abeilles:'0',oeufs:'0',couvain:'0',pollen:'0',nectar:'0',miel:'0',nourr:'non',varroas:'0',traitement:'néant'};
 const FIELDS=[['reine','Reine'],['force','Force'],['cadres','Nombre de cadres'],['abeilles','Dont abeilles'],['oeufs','Œufs / larve'],['couvain','Faces de couvain'],['pollen','Pollen'],['nectar','Nectar'],['miel','Réserves miel'],['nourr','Nourrissement'],['quantite','Quantité (cl)'],['varroas','Nombre de varroas'],['traitement','Traitement'],['obs','Observation / travail effectué ou à prévoir']];
-const KW=[['reine',/\b(?:reines?|rennes?|raine|reyne)\b/],['oeufs',/\b(?:oeufs?|larves?)\b/],['couvain',/\bcouvain\b/],['force',/\bforce\b/],['abeilles',/\b(?:dont abeilles?|dont|abeilles?)\b/],['cadres',/\b(?:nombre de )?cadres?\b/],['pollen',/\bpollen\b/],['quantite',/\bquantite\b/],['varroas',/\b(?:nombre de )?var+o\w*\b/],['nectar',/\bnectar\b/],['miel',/\b(?:reserves?(?: de)? miel|miel)\b/],['nourr',/\bnourrissement\b|\bnourri\b/],['traitement',/\btraitement\b/],['obs',/\bobservations?\b/]];
+const KW=[['reine',/\b(?:reines?|rennes?|raine|reyne)\b/],['oeufs',/\b(?:oeufs?|larves?)\b/],['couvain',/\b(?:faces? (?:de |du )?)?(?:couvains?|couvins?|couvent|couvaint|cou vain|couvin)\b|\bfaces?\b/],['force',/\bforce\b/],['abeilles',/\b(?:dont abeilles?|dont|abeilles?)\b/],['cadres',/\b(?:nombre de )?cadres?\b/],['pollen',/\bpollen\b/],['quantite',/\bquantite\b/],['varroas',/\b(?:nombre de )?var+o\w*\b/],['nectar',/\bnectar\b/],['miel',/\b(?:reserves?(?: de)? miel|miel)\b/],['nourr',/\bnourrissement\b|\bnourri\b/],['traitement',/\btraitement\b/],['obs',/\bobservations?\b/]];
 const NW={'quatre-vingt':80,soixante:60,cinquante:50,quarante:40,trente:30,cent:100,zero:0,un:1,une:1,deux:2,trois:3,quatre:4,cinq:5,six:6,sept:7,huit:8,neuf:9,dix:10,onze:11,douze:12,treize:13,quatorze:14,quinze:15,seize:16,'dix-sept':17,'dix-huit':18,'dix-neuf':19,vingt:20};
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[’']/g,' ').replace(/[,;.!?]/g,' ').replace(/\s+/g,' ').trim();
 function nums(s){
   s=s.replace(/(\D)-(?=[a-z])/g,'$1 ').replace(/([a-z])-(?=[a-z])/g,(m,c)=>c+'-');
   s=s.replace(/\bet demie?\b/g,' .5');
   s=s.replace(/\b(quatre[- ]vingts?|soixante|cinquante|quarante|trente|cent|dix[- ](?:sept|huit|neuf)|zero|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix|onze|douze|treize|quatorze|quinze|seize|vingt)\b/g,m=>' '+NW[m.replace(' ','-').replace(/^(quatre-vingt)s$/,'$1')]+' ');
-  s=s.replace(/\s+/g,' ');
+  s=s.replace(/\s+/g,' ').replace(/(\d+) virgule (\d+)/g,'$1.$2');
   s=s.replace(/\b([2-9]0) (?:et )?(1\d|[1-9])\b/g,(m,a,b)=>String(+a+ +b));
   s=s.replace(/(\d)\s+\.5/g,'$1.5').replace(/(\d),(\d)/g,'$1.$2').replace(/\s+/g,' ').trim();
   return s;
@@ -182,11 +183,13 @@ function warn(){
   if(n&&a&&a>n)w.push('Dont abeilles > nombre de cadres : à vérifier.');
   $('warns').textContent=w.join(' ');
 }
-function stopListen(){try{if(native&&live)native.stop();else if(dict&&live)dict.stop()}catch(e){}}
+function stopListen(){wantListen=false;try{if(native&&live)native.stop();else if(dict&&live)dict.stop()}catch(e){}}
 function showFields(d){for(const k in fieldEls)if(document.activeElement!==fieldEls[k])fieldEls[k].value=d[k]??DEF[k]??''}
 function livePreview(text){const p=parse(text);showFields({...draft,...p.set})}
 function say(t){$('heard').textContent=t}
+const heardLog=[];
 function handle(raw){
+  heardLog.unshift(raw);heardLog.length=Math.min(heardLog.length,5);$('log').innerHTML='<b>Entendu :</b> '+heardLog.map(x=>'« '+x.replace(/[<>&]/g,'')+' »').join(' · ');
   const p=parse(raw);say('« '+raw+' »');
   if(p.site){site=p.site;renderSites();renderChips()}
   if(p.colony&&!p.cmds.includes('valider'))selectColony(p.colony);
@@ -241,21 +244,26 @@ $('envoyer').onclick=async()=>{
   }catch(e){if(e&&e.name==='AbortError')$('sendmsg').textContent='Envoi annulé.';else dl()}
 };
 // ---------- dictée ----------
-let dict=null,live=false,native=null;
+let dict=null,live=false,native=null,wantListen=false;
 function setLive(v){live=v;$('mic').classList.toggle('live',v);$('mic').textContent=v?'⏹ Écoute… (cliquer pour arrêter)':'🎤 Cliquer pour parler'}
 function initNative(){
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){$('mic').disabled=false;$('mic').textContent='⌨️ Dicter au clavier';$('micmsg').textContent='Touchez le champ de saisie, puis le micro de votre clavier Android : la phrase est prise en compte après une courte pause.';return}
-  native=new SR();native.lang='fr-FR';native.continuous=true;native.interimResults=true;
-  native.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];if(r.isFinal)handle(r[0].transcript);else{say('… '+r[0].transcript);livePreview(r[0].transcript)}}};
-  native.onstart=()=>setLive(true);native.onend=()=>setLive(false);
-  native.onerror=e=>{setLive(false);$('micmsg').textContent='Micro du navigateur refusé ou indisponible ('+e.error+'). Utilisez le micro du clavier dans le champ de saisie.'};
+  native=new SR();native.lang='fr-FR';native.continuous=true;native.interimResults=true;native.maxAlternatives=1;
+  let lastFinal='',lastInterim='';
+  const fresh=(t,prev)=>{t=t.trim();return prev&&t.toLowerCase().startsWith(prev.toLowerCase())?t.slice(prev.length).trim():t};
+  native.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++){const r=e.results[i];const t=r[0].transcript;
+    if(r.isFinal){const n=fresh(t,lastFinal);lastFinal=t.trim();lastInterim='';if(n)handle(n)}
+    else{const n=fresh(t,lastFinal);if(n){say('\u2026 '+n);livePreview(n)}}}};
+  native.onstart=()=>{lastFinal='';lastInterim='';setLive(true)};
+  native.onend=()=>{if(wantListen){setTimeout(()=>{try{native.start()}catch(e){setLive(false)}},200)}else setLive(false)};
+  native.onerror=e=>{if(e.error==='no-speech'||e.error==='aborted')return;wantListen=false;setLive(false);$('micmsg').textContent='Micro du navigateur refus\u00e9 ou indisponible ('+e.error+'). Utilisez le micro du clavier dans le champ de saisie.'};
   $('mic').disabled=false;setLive(false);$('micmsg').textContent='Dictée du navigateur (Chrome).';
 }
 let autoT=null;
 $('typed').addEventListener('input',()=>{clearTimeout(autoT);autoT=setTimeout(()=>{const v=$('typed').value.trim();if(v){handle(v);$('typed').value=''}},1800)});
 initNative();
-$('mic').onclick=()=>{if(native){if(live)native.stop();else{try{native.start()}catch(e){}}return}$('typed').focus()};
+$('mic').onclick=()=>{if(native){if(live||wantListen){wantListen=false;native.stop()}else{wantListen=true;try{native.start()}catch(e){}}return}$('typed').focus()};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 window.addEventListener('beforeunload',e=>{if(Object.values(draft).some(v=>v)){e.preventDefault()}});
 renderSites();renderChips();renderDraft();renderList();
